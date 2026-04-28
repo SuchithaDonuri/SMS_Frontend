@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Marks</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+    <main class="main">
+        <section class="form-section">
+
+            <header class="page-header">
+                <h2>Update Marks</h2>
+                <p>Enter student marks details below</p>
+            </header>
+
+            <form class="form-card" action="/teachers/update_marks" method="post">
+
+                <div class="form-group">
+                    <label for="student_id">Student ID</label>
+                    <input type="text" id="student_id" name="student_id" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="exam_type">Exam Type</label>
+                    <select id="exam_type" name="exam">
+                        <option value="Quarterly">Quarterly</option>
+                        <option value="Half-Yearly">Half-Yearly</option>
+                        <option value="Annual">Annual</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="math">Math Marks</label>
+                    <input type="number" id="math" name="math" min="0" max="100" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="physics">Physics Marks</label>
+                    <input type="number" id="physics" name="physics" min="0" max="100" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="english">English Marks</label>
+                    <input type="number" id="english" name="english" min="0" max="100" required>
+                </div>
+
+                <button type="submit" class="btn-submit">Update Marks</button>
+
+            </form>
+
+        </section>
+    </main>
+
+</body>
+</html>

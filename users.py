@@ -110,9 +110,7 @@ class Parent(User):
             3 View child Remarks
             4 Logout""")
 
-
-
-
+    
 
 
 

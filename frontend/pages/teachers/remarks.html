@@ -1,0 +1,36 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Remarks</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+
+    <main class="main">
+        <section class="form-section">
+
+            <h1>Update Remarks</h1>
+
+            <form class="form-card" action="/teacher/update_remarks" method="POST">
+
+                <label for="student_id">Student ID</label>
+                <input type="text" name="student_id" id="student_id">
+
+                <div class="form-group">
+                    <label for="remark">Remark</label>
+                    <textarea id="remark" name="remark" required></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Save Remark</button>
+
+            </form>
+
+        </section>
+    </main>
+
+</body>
+</html>
