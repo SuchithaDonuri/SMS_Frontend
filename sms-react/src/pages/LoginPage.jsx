@@ -1,14 +1,16 @@
+// src/pages/LoginPage.jsx
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getAllUsers } from "../api/mockApi";
+import { loginUser } from "../api/flaskApi";
 
 function LoginPage() {
-  const [role, setRole]         = useState("");
-  const [userId, setUserId]     = useState("");
+  const [role,     setRole]     = useState("");
+  const [userId,   setUserId]   = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [loading,  setLoading]  = useState(false);
 
   const navigate  = useNavigate();
   const { login } = useAuth();
@@ -17,7 +19,7 @@ function LoginPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    // Exactly your validation from login.js lines 12-17
+    // WHY this check? All fields must be filled before submitting
     if (!role || !userId || !password) {
       setErrorMsg("Please fill all fields!");
       return;
@@ -25,50 +27,36 @@ function LoginPage() {
 
     setLoading(true);
     try {
-      // Your exact MockAPI URL via mockApi.js
-      const users = await getAllUsers();
+      // WHY loginUser? Calls Flask API instead of MockAPI
+      // Sends id, password, role to Flask → Flask checks PostgreSQL
+      const result = await loginUser(userId, password, role);
 
-      // Your exact matching logic from login.js
-      // Note: your API uses user.id — keeping that exactly
-      const foundUser = users.find(
-        (user) =>
-          user.id === userId &&
-          user.password === password &&
-          user.role === role
-      );
-
-      if (foundUser) {
-        login(foundUser); // saves user to AuthContext
-
-        // Your exact role redirects — same roles, same capitalisation
-        if (role === "Principal") navigate("/principal/dashboard");
-        else if (role === "Teacher")   navigate("/teacher/dashboard");
-        else if (role === "Student")   navigate("/student/dashboard");
-        else if (role === "Parent")    navigate("/parent/dashboard");
-
+      if (result.success) {
+        // WHY login(result.user)? Saves user to AuthContext
+        login(result.user);
+        if (role === "Principal")    navigate("/principal/dashboard");
+        else if (role === "Teacher") navigate("/teacher/dashboard");
+        else if (role === "Student") navigate("/student/dashboard");
+        else if (role === "Parent")  navigate("/parent/dashboard");
       } else {
         setErrorMsg("Invalid credentials ❌");
       }
 
     } catch (err) {
       console.error(err);
-      setErrorMsg("Error fetching data ❌");
+      setErrorMsg("Error connecting to server ❌");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50
-                    to-slate-200 flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 flex flex-col items-center justify-center">
 
-      {/* Your login-card — same structure as your login.html article */}
       <div className="w-[360px] bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
 
-        {/* Your card-header */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center
-                          justify-center mx-auto mb-3">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3">
             <span className="text-white font-bold text-lg">SMS</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
@@ -79,7 +67,7 @@ function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* Role dropdown — your exact 4 options, exact capitalisation */}
+          {/* Role dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               User Role
@@ -87,9 +75,7 @@ function LoginPage() {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg
-                         bg-white focus:outline-none focus:ring-2
-                         focus:ring-blue-500 focus:border-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
               <option value="" disabled>Choose your role...</option>
               <option value="Principal">Principal</option>
@@ -99,7 +85,7 @@ function LoginPage() {
             </select>
           </div>
 
-          {/* User ID — your exact field */}
+          {/* User ID */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               User ID
@@ -109,13 +95,11 @@ function LoginPage() {
               placeholder="Enter your ID"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg
-                         bg-white focus:outline-none focus:ring-2
-                         focus:ring-blue-500 focus:border-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
 
-          {/* Password — your exact field */}
+          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
@@ -125,13 +109,11 @@ function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg
-                         bg-white focus:outline-none focus:ring-2
-                         focus:ring-blue-500 focus:border-blue-500 text-sm"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
 
-          {/* Error message — your exact errorMsg */}
+          {/* Error message */}
           {errorMsg && (
             <p className="text-red-500 text-sm text-center">{errorMsg}</p>
           )}
@@ -140,9 +122,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold
-                       py-2.5 rounded-lg transition-colors disabled:opacity-50
-                       disabled:cursor-not-allowed text-sm"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             {loading ? "Signing in..." : "Login to System"}
           </button>
@@ -150,7 +130,6 @@ function LoginPage() {
         </form>
       </div>
 
-      {/* Your footer */}
       <footer className="mt-6 text-center text-sm text-gray-500">
         <p>© 2026 Student Management System. All rights reserved.</p>
       </footer>

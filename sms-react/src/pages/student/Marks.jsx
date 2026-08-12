@@ -1,71 +1,122 @@
+// src/pages/student/Marks.jsx
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import Navbar from "../../components/Navbar";
-
-const marksData = [
-  { subject: "Mathematics", marks: 85, grade: "A" },
-  { subject: "Science",     marks: 90, grade: "A+" },
-  { subject: "English",     marks: 78, grade: "B+" },
-  { subject: "Social",      marks: 88, grade: "A" },
-];
-
-const gradeColor = {
-  "A+": "bg-green-100 text-green-700",
-  "A":  "bg-blue-100 text-blue-700",
-  "B+": "bg-amber-100 text-amber-700",
-  "B":  "bg-orange-100 text-orange-700",
-};
+import { getMarks } from "../../api/flaskApi";
 
 function Marks() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // WHY useState? Stores marks fetched from Flask API
+  const [marks,   setMarks]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState("");
+
+  // WHY useEffect? Runs once when page loads — fetches marks from Flask
+  useEffect(() => {
+    async function fetchMarks() {
+      try {
+        const data = await getMarks(user.id);
+        if (data.success) {
+          setMarks(data.marks);
+        } else {
+          setError("Failed to load marks.");
+        }
+      } catch (err) {
+        setError("Cannot connect to server.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMarks();
+  }, [user.id]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100
-                    via-blue-50 to-slate-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200">
       <Navbar />
+      <main className="max-w-5xl mx-auto px-6 py-8">
 
-      <main className="max-w-5xl mx-auto px-8 py-10">
+        <button
+          onClick={() => navigate("/student/dashboard")}
+          className="mb-6 text-blue-600 hover:text-blue-800 text-sm font-medium"
+        >
+          ← Back to Dashboard
+        </button>
 
-        <section className="mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">Marks Overview</h2>
-          <p className="text-slate-500 text-sm mt-1">
-            Your subject-wise academic performance
-          </p>
-        </section>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-800">📊 My Marks</h1>
+          <p className="text-slate-500 mt-1">Your exam results from the database.</p>
+        </div>
 
-        <section className="bg-white rounded-2xl shadow-sm border
-                            border-gray-100 overflow-hidden">
-          <table className="w-full text-base">  {/* was text-sm, now text-base */}
-            <thead className="bg-slate-50 border-b border-gray-100">
-              <tr>
-                <th className="text-left px-6 py-4 font-semibold text-slate-600">
-                  Subject
-                </th>
-                <th className="text-left px-6 py-4 font-semibold text-slate-600">
-                  Marks
-                </th>
-                <th className="text-left px-6 py-4 font-semibold text-slate-600">
-                  Grade
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {marksData.map((row, i) => (
-                <tr
-                  key={row.subject}
-                  className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}
-                >
-                  <td className="px-6 py-4 font-medium text-slate-700">
-                    {row.subject}
-                  </td>
-                  <td className="px-6 py-4 text-slate-600">{row.marks}/100</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold
-                                     ${gradeColor[row.grade] || "bg-gray-100 text-gray-600"}`}>
-                      {row.grade}
-                    </span>
-                  </td>
+        {/* WHY loading state? Shows spinner while API is fetching */}
+        {loading && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+            <p className="text-slate-500">Loading marks...</p>
+          </div>
+        )}
+
+        {/* WHY error state? Shows message if Flask is not running */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+            <p className="text-red-600">{error}</p>
+            <p className="text-red-400 text-sm mt-1">
+              Make sure Flask is running on port 5000
+            </p>
+          </div>
+        )}
+
+        {/* Show marks table when data is loaded */}
+        {!loading && !error && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-blue-600 text-white text-sm">
+                  <th className="px-6 py-3">Exam Type</th>
+                  <th className="px-6 py-3">Math</th>
+                  <th className="px-6 py-3">Physics</th>
+                  <th className="px-6 py-3">English</th>
+                  <th className="px-6 py-3">Average</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+              </thead>
+              <tbody>
+                {marks.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                      No marks found.
+                    </td>
+                  </tr>
+                ) : (
+                  marks.map((row, i) => {
+                    const avg = Math.round(
+                      (row.math + row.physics + row.english) / 3
+                    );
+                    return (
+                      <tr
+                        key={row.id}
+                        className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}
+                      >
+                        <td className="px-6 py-4 font-medium text-slate-800">
+                          {row.exam_type}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">{row.math}</td>
+                        <td className="px-6 py-4 text-slate-600">{row.physics}</td>
+                        <td className="px-6 py-4 text-slate-600">{row.english}</td>
+                        <td className="px-6 py-4">
+                          <span className="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full text-sm">
+                            {avg}%
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
       </main>
 

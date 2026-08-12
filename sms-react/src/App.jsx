@@ -10,6 +10,8 @@ import StudentMarks      from './pages/student/Marks'
 import StudentAttendance from './pages/student/Attendance'
 import StudentTimetable  from './pages/student/Timetable'
 import StudentRemarks from './pages/student/Remarks'
+import PrincipalDashboard from './pages/principal/PrincipalDashboard'
+import ParentDashboard from './pages/parent/ParentDashboard'
 
 
 // Teacher pages
@@ -74,6 +76,40 @@ function App() {
             <TeacherTimetable />
           </ProtectedRoute>
         } />
+
+        {/* Principal Routes */}
+        <Route path="/principal/dashboard" element={
+          <ProtectedRoute allowedRole="Principal">
+            <PrincipalDashboard />
+          </ProtectedRoute>
+        }/>
+
+        {/* ── Parent Routes ── */}
+        {/* WHY reuse student pages? Parent sees same data as student */}
+        <Route path="/parent/dashboard" element={
+          <ProtectedRoute allowedRole="Parent">
+            <ParentDashboard />
+          </ProtectedRoute>
+        }/>
+
+        {/* WHY allowedRoles array? Both Student AND Parent can see these pages */}
+        <Route path="/parent/marks" element={
+          <ProtectedRoute allowedRoles={["Student", "Parent"]}>
+            <StudentMarks />
+          </ProtectedRoute>
+        }/>
+
+        <Route path="/parent/attendance" element={
+          <ProtectedRoute allowedRoles={["Student", "Parent"]}>
+            <StudentAttendance />
+          </ProtectedRoute>
+        }/>
+
+        <Route path="/parent/remarks" element={
+          <ProtectedRoute allowedRoles={["Student", "Parent"]}>
+            <StudentRemarks />
+          </ProtectedRoute>
+        }/>
 
         </Routes>
       </BrowserRouter>
