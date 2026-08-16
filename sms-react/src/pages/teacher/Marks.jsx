@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import { addMarks } from "../../api/flaskApi";
 
 function Marks() {
   const navigate = useNavigate();
@@ -15,11 +16,16 @@ function Marks() {
   const [english,   setEnglish]   = useState("");
   const [error,     setError]     = useState("");
   const [submitted, setSubmitted] = useState(false);
+  // WHY this state? Disables the button and shows feedback while the
+  // request is in flight, so the teacher doesn't double-submit
+  const [saving,    setSaving]    = useState(false);
 
   // WHY records? Shows a live list of marks submitted this session
   const [records, setRecords] = useState([]);
 
-  function handleSubmit(e) {
+  // WHY async now? We're calling Flask (addMarks), which takes time —
+  // async/await lets us wait for the real response before updating the UI
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setSubmitted(false);
@@ -41,28 +47,54 @@ function Marks() {
       return;
     }
 
-    // WHY spread? Adds new record to top without removing old ones
-    setRecords((prev) => [
-      {
-        studentId,
-        examType,
-        math:    Number(math),
-        physics: Number(physics),
-        english: Number(english),
-        // WHY average? Gives teacher a quick summary of student performance
-        avg: Math.round((Number(math) + Number(physics) + Number(english)) / 3),
-      },
-      ...prev,
-    ]);
+    setSaving(true);
 
-    setSubmitted(true);
+    try {
+      // WHY this call? This is the piece that was missing — it actually
+      // sends the marks to Flask, which INSERTs them into PostgreSQL
+      const data = await addMarks({
+        student_id: studentId,
+        exam_type:  examType,
+        math:       Number(math),
+        physics:    Number(physics),
+        english:    Number(english),
+      });
 
-    // WHY reset? Clears form after submit — ready for next student
-    setStudentId("");
-    setExamType("");
-    setMath("");
-    setPhysics("");
-    setEnglish("");
+      if (!data.success) {
+        setError(data.message || "Failed to save marks.");
+        setSaving(false);
+        return;
+      }
+
+      // WHY spread? Adds new record to top without removing old ones
+      // (this is now just for the teacher's on-screen confirmation list —
+      // the real, permanent copy is already saved in PostgreSQL at this point)
+      setRecords((prev) => [
+        {
+          studentId,
+          examType,
+          math:    Number(math),
+          physics: Number(physics),
+          english: Number(english),
+          // WHY average? Gives teacher a quick summary of student performance
+          avg: Math.round((Number(math) + Number(physics) + Number(english)) / 3),
+        },
+        ...prev,
+      ]);
+
+      setSubmitted(true);
+
+      // WHY reset? Clears form after submit — ready for next student
+      setStudentId("");
+      setExamType("");
+      setMath("");
+      setPhysics("");
+      setEnglish("");
+    } catch (err) {
+      setError("Cannot connect to server. Make sure Flask is running.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -195,9 +227,10 @@ function Marks() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors"
+              disabled={saving}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Update Marks
+              {saving ? "Saving..." : "Update Marks"}
             </button>
 
           </form>

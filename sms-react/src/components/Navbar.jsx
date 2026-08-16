@@ -1,10 +1,13 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import StudentDashboard from "../pages/StudentDashboard";
+import TeacherDashboard from '../pages/teacher/TeacherDashboard'
+
 
 // Role to dashboard route map
 const roleHome = {
-  Student:   "/student-dashboard",
-  Teacher:   "/teacher-dashboard",
+  Student:   "/StudentDashboard",
+  Teacher:   "/TeacherDashboard",
   Principal: "/principal-dashboard",
   Parent:    "/parent-dashboard",
 };
@@ -12,14 +15,14 @@ const roleHome = {
 // Nav links per role — exactly matching your HTML pages
 const navLinks = {
   Student: [
-    { label: "Dashboard", path: "/student-dashboard" },
+    { label: "Dashboard", path: "/StudentDashboard" },
     { label: "Marks",     path: "/student/marks" },
     { label: "Attendance",path: "/student/attendance" },
     { label: "Timetable", path: "/student/timetable" },
     { label: "Remarks",   path: "/student/remarks" },
   ],
   Teacher: [
-    { label: "Dashboard", path: "/teacher-dashboard" },
+    { label: "Dashboard", path: "/TeacherDashboard" },
     { label: "Marks",     path: "/teacher/marks" },
     { label: "Attendance",path: "/teacher/attendance" },
     { label: "Timetable", path: "/teacher/timetable" },

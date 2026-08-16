@@ -1,6 +1,7 @@
 # routes/principal.py
 
 from flask import Blueprint, jsonify
+from flask_jwt_extended import jwt_required, get_jwt
 import psycopg2
 import os
 
@@ -16,13 +17,23 @@ def get_db():
     )
     return conn
 
+def require_principal():
+    claims = get_jwt()
+    return claims.get("role") == "principal".lower()
+
+
 # ── GET all students ──
 @principal_bp.route("/api/principal/students", methods=["GET"])
+@jwt_required()
 def get_all_students():
+    if not require_principal():
+        return jsonify({"success": False, "message": "Access denied"}), 403
     try:
         conn   = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE role=%s", ("Student",))
+        # FIXED — was "Student" (capital S), which didn't match how roles
+        # are actually stored/checked everywhere else in this project
+        cursor.execute("SELECT id FROM users WHERE role=%s", ("student",))
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -31,13 +42,18 @@ def get_all_students():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+
 # ── GET all teachers ──
 @principal_bp.route("/api/principal/teachers", methods=["GET"])
+@jwt_required()
 def get_all_teachers():
+    if not require_principal():
+        return jsonify({"success": False, "message": "Access denied"}), 403
     try:
         conn   = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE role=%s", ("Teacher",))
+        # FIXED — was "Teacher" (capital T), same casing issue as above
+        cursor.execute("SELECT id FROM users WHERE role=%s", ("teacher",))
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -46,9 +62,13 @@ def get_all_teachers():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+
 # ── GET all marks (principal monitors) ──
 @principal_bp.route("/api/principal/marks", methods=["GET"])
+@jwt_required()
 def get_all_marks():
+    if not require_principal():
+        return jsonify({"success": False, "message": "Access denied"}), 403
     try:
         conn   = get_db()
         cursor = conn.cursor()
@@ -73,9 +93,13 @@ def get_all_marks():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+
 # ── GET all attendance (principal monitors) ──
 @principal_bp.route("/api/principal/attendance", methods=["GET"])
+@jwt_required()
 def get_all_attendance():
+    if not require_principal():
+        return jsonify({"success": False, "message": "Access denied"}), 403
     try:
         conn   = get_db()
         cursor = conn.cursor()

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
+import { addRemark } from "../../api/flaskApi";
 
 function Remarks() {
   const navigate = useNavigate();
@@ -12,11 +13,12 @@ function Remarks() {
   const [remark,    setRemark]    = useState("");
   const [error,     setError]     = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [saving,setSaving]=useState(false)
 
   // WHY records? Shows all remarks submitted this session
   const [records, setRecords] = useState([]);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setSubmitted(false);
@@ -27,25 +29,41 @@ function Remarks() {
       return;
     }
 
-    // WHY spread? Adds new remark to top of list
-    setRecords((prev) => [
-      {
-        studentId,
-        remark,
-        date: new Date().toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        }),
-      },
-      ...prev,
-    ]);
+    setSaving(true);
 
-    setSubmitted(true);
+    try {
+      const data = await addRemark({ student_id: studentId, remark });
 
-    // WHY reset? Clears form after submit
-    setStudentId("");
-    setRemark("");
+      if (!data.success) {
+        setError(data.message || "Failed to save remark.");
+        setSaving(false);
+        return;
+      }
+
+      // WHY spread? Adds new remark to top of list
+      setRecords((prev) => [
+        {
+          studentId,
+          remark,
+          date: new Date().toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+        },
+        ...prev,
+      ]);
+
+      setSubmitted(true);
+
+      // WHY reset? Clears form after submit
+      setStudentId("");
+      setRemark("");
+    } catch (err) {
+      setError("Cannot connect to server.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -122,9 +140,10 @@ function Remarks() {
 
             <button
               type="submit"
+              disabled={saving}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors"
             >
-              Save Remark
+              {saving ? "Saving..." : "Save Remark"}
             </button>
 
           </form>

@@ -5,7 +5,7 @@
 from flask import Blueprint, request, jsonify
 import psycopg2
 import os
-
+from flask_jwt_extended import create_access_token
 # WHY "auth"? This is the name of this blueprint
 auth_bp = Blueprint("auth", __name__)
 
@@ -40,17 +40,20 @@ def login():
         user = cursor.fetchone()
         cursor.close()
         conn.close()
-
+        
         if user:
+            # NEW — create a signed token containing id + role
+            access_token = create_access_token(
+                identity=user[0],
+                additional_claims={"role": user[1]}
+            )
             return jsonify({
                 "success": True,
+                "token": access_token,          # NEW
                 "user": { "id": user[0], "role": user[1] }
             })
         else:
-            return jsonify({
-                "success": False,
-                "message": "Invalid credentials"
-            }), 401
+            return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
