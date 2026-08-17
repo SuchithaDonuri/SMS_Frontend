@@ -28,7 +28,7 @@ def get_db():
 # let us add a proper ownership check here later.
 def require_parent():
     claims = get_jwt()
-    return claims.get("role") == "parent".lower()
+    return claims.get("role") == "Parent"
 
 
 # ── GET child marks ──

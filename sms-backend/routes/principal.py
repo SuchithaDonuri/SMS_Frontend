@@ -19,7 +19,7 @@ def get_db():
 
 def require_principal():
     claims = get_jwt()
-    return claims.get("role") == "principal".lower()
+    return claims.get("role") == "Principal"
 
 
 # ── GET all students ──

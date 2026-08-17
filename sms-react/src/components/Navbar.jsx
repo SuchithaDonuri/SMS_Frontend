@@ -4,12 +4,11 @@ import StudentDashboard from "../pages/StudentDashboard";
 import TeacherDashboard from '../pages/teacher/TeacherDashboard'
 
 
-// Role to dashboard route map
 const roleHome = {
-  Student:   "/StudentDashboard",
-  Teacher:   "/TeacherDashboard",
-  Principal: "/principal-dashboard",
-  Parent:    "/parent-dashboard",
+  Student:   "/student/dashboard",
+  Teacher:   "/teacher/dashboard",
+  Principal: "/principal/dashboard",
+  Parent:    "/parent/dashboard",
 };
 
 // Nav links per role — exactly matching your HTML pages
