@@ -34,9 +34,9 @@ def login():
         conn   = get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT id, role FROM users WHERE id=%s AND password=%s AND role=%s",
-            (user_id, password, role)
-        )
+       "SELECT id, role FROM users WHERE id=%s AND password=%s AND LOWER(role)=LOWER(%s)",
+       (user_id, password, role)
+   )
         user = cursor.fetchone()
         cursor.close()
         conn.close()

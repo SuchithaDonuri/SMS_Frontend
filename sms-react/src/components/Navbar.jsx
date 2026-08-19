@@ -14,28 +14,28 @@ const roleHome = {
 // Nav links per role — exactly matching your HTML pages
 const navLinks = {
   Student: [
-    { label: "Dashboard", path: "/StudentDashboard" },
+    { label: "Dashboard", path: "/Student/dashboard" },
     { label: "Marks",     path: "/student/marks" },
     { label: "Attendance",path: "/student/attendance" },
     { label: "Timetable", path: "/student/timetable" },
     { label: "Remarks",   path: "/student/remarks" },
   ],
   Teacher: [
-    { label: "Dashboard", path: "/TeacherDashboard" },
+    { label: "Dashboard", path: "/Teacher/dashboard" },
     { label: "Marks",     path: "/teacher/marks" },
     { label: "Attendance",path: "/teacher/attendance" },
     { label: "Timetable", path: "/teacher/timetable" },
     { label: "Remarks",   path: "/teacher/remarks" },
   ],
   Principal: [
-    { label: "Dashboard", path: "/principal-dashboard" },
+    { label: "Dashboard", path: "/principal/dashboard" },
     { label: "Students",  path: "/principal/students" },
     { label: "Teachers",  path: "/principal/teachers" },
     { label: "Attendance",path: "/principal/attendance" },
     { label: "Remarks",   path: "/principal/remarks" },
   ],
   Parent: [
-    { label: "Dashboard", path: "/parent-dashboard" },
+    { label: "Dashboard", path: "/parent/dashboard" },
     { label: "Marks",     path: "/parent/marks" },
     { label: "Attendance",path: "/parent/attendance" },
     { label: "Timetable", path: "/parent/timetable" },
@@ -48,12 +48,10 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // WHY: Clicking SMS logo goes back to dashboard — exactly like Amazon logo
-  function handleLogoClick() {
-    if (user) {
-      navigate(roleHome[user.role]);
-    } else {
-      navigate("/");
+  // WHY: Clicking SMS logo goes back to dashboard 
+  function handleLogoClick(){
+    if (user){
+      navigate('/')
     }
   }
 

@@ -27,15 +27,22 @@ export default function AuthProvider({ children }) {
 
   // WHY two arguments now? login() used to only receive the user object.
   // Now it also receives the JWT token that Flask issues at login.
-  function login(userData, authToken) {
-    setUser(userData);
-    setToken(authToken);
-    // WHY JSON.stringify? localStorage can only store plain strings —
-    // userData is an object, so we convert it to a string to save it
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", authToken);
-  }
+ function login(userData, authToken) {
+  // WHY capitalize here? The backend now stores/returns role in lowercase
+  // ("principal", "student"...), but Navbar, ProtectedRoute, and the
+  // dashboards were all written expecting "Principal", "Student" (capitalized).
+  // Fixing it once, here, means every other file downstream keeps working
+  // without needing separate patches in Navbar, ProtectedRoute, etc.
+  const normalizedUser = {
+    ...userData,
+    role: userData.role.charAt(0).toUpperCase() + userData.role.slice(1).toLowerCase(),
+  };
 
+  setUser(normalizedUser);
+  setToken(authToken);
+  localStorage.setItem("user", JSON.stringify(normalizedUser));
+  localStorage.setItem("token", authToken);
+}
   function logout() {
     setUser(null);
     setToken(null);

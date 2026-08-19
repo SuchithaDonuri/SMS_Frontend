@@ -138,3 +138,32 @@ export async function deleteTimetableDay(className, day) {
   });
   return response.json();
 }
+
+// ── PRINCIPAL: class/section filtered views ──
+export async function getStudentsByClass(className, section) {
+  const response = await fetch(`${BASE_URL}/principal/students/${className}/${section}`, {
+    headers: authHeader(),
+  });
+  return response.json();
+}
+
+export async function getMarksByClass(className, section) {
+  const response = await fetch(`${BASE_URL}/principal/marks/${className}/${section}`, {
+    headers: authHeader(),
+  });
+  return response.json();
+}
+
+export async function getAttendanceByClass(className, section) {
+  const response = await fetch(`${BASE_URL}/principal/attendance/${className}/${section}`, {
+    headers: authHeader(),
+  });
+  return response.json();
+}
+
+export async function getRemarksByClass(className, section) {
+  const response = await fetch(`${BASE_URL}/principal/remarks/${className}/${section}`, {
+    headers: authHeader(),
+  });
+  return response.json();
+}

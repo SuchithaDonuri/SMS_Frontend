@@ -12,6 +12,7 @@ import StudentTimetable  from './pages/student/Timetable'
 import StudentRemarks from './pages/student/Remarks'
 import PrincipalDashboard from './pages/principal/PrincipalDashboard'
 import ParentDashboard from './pages/parent/ParentDashboard'
+import ClassView from './pages/principal/ClassView'
 
 
 // Teacher pages
@@ -72,7 +73,7 @@ function App() {
           </ProtectedRoute>
         } />
         <Route path="/teacher/timetable" element={
-          <ProtectedRoute allowedRole="Teacher">
+          <ProtectedRoute allowedRole={["Teacher","Principal"]}>
             <TeacherTimetable />
           </ProtectedRoute>
         } />
@@ -110,6 +111,11 @@ function App() {
             <StudentRemarks />
           </ProtectedRoute>
         }/>
+        <Route path="/principal/class-view" element={
+        <ProtectedRoute allowedRole="Principal">
+          <ClassView />
+        </ProtectedRoute>
+      }/>
 
         </Routes>
       </BrowserRouter>

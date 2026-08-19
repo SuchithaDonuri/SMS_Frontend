@@ -3,6 +3,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../../components/Navbar";
+import ClassView from "./ClassView";
 
 function PrincipalDashboard() {
   const { user } = useAuth();
@@ -12,30 +13,12 @@ function PrincipalDashboard() {
   // WHY reuse existing routes? Principal views the same data
 // No need to build separate pages — just redirect to existing ones
     const cards = [
-    {
-        icon: "🗓️",
-        title: "Student Timetable",
-        desc: "View timetable for a specific class and section.",
-        path: "/student/timetable",   // ← reuses Teacher Timetable page
-    },
-    {
-        icon: "📊",
-        title: "Marks",
-        desc: "View and monitor student academic performance.",
-        path: "/student/marks",       // ← reuses Teacher Marks page
-    },
-    {
-        icon: "✅",
-        title: "Attendance",
-        desc: "Monitor student attendance records.",
-        path: "/student/attendance",  // ← reuses Teacher Attendance page
-    },
-    {
-        icon: "💬",
-        title: "Remarks",
-        desc: "Check teacher feedback and remarks on students.",
-        path: "/student/remarks",     // ← reuses Teacher Remarks page
-    },
+      {
+    icon: "📊",
+    title: "Class Records",
+    desc: "View students, marks, attendance and remarks by class and section.",
+    path: "/principal/class-view",
+},
     {
         icon: "👩‍🏫",
         title: "Teacher Timetable",

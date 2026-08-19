@@ -191,19 +191,14 @@ def add_remark():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-
-# ── GET timetable for a class ──
 @teacher_bp.route("/api/teacher/timetable/<class_name>", methods=["GET"])
 @jwt_required()
 def get_timetable(class_name):
-    if not require_teacher():
+    if not require_teacher_or_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
         conn   = get_db()
         cursor = conn.cursor()
-        # WHY this ORDER BY? "day" is stored as text, so PostgreSQL would
-        # otherwise sort it alphabetically (Friday, Monday, Saturday...).
-        # This CASE maps each day to a number so it sorts Monday -> Saturday.
         cursor.execute(
             "SELECT day, p1_subject, p1_teacher, p2_subject, p2_teacher, "
             "p3_subject, p3_teacher, p4_subject, p4_teacher, p5_subject, p5_teacher "
@@ -295,3 +290,7 @@ def delete_timetable_day(class_name, day):
         return jsonify({"success": True, "message": "Row deleted!"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
+    
+def require_teacher_or_principal():
+    role = get_jwt().get("role", "").lower()
+    return role in ("teacher", "principal")
