@@ -1,26 +1,11 @@
 # routes/auth.py
 
-# WHY Blueprint? Creates a mini-app for auth routes only
-# Instead of writing @app.route, we write @auth_bp.route
 from flask import Blueprint, request, jsonify
-import psycopg2
-import os
 from flask_jwt_extended import create_access_token
-# WHY "auth"? This is the name of this blueprint
-auth_bp = Blueprint("auth", __name__)
+from sqlalchemy import func
+from models import User
 
-# WHY this function here too?
-# Each file needs its own db connection function
-# Because each file is independent
-def get_db():
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT")
-    )
-    return conn
+auth_bp = Blueprint("auth", __name__)
 
 # ── LOGIN Route ──
 @auth_bp.route("/api/login", methods=["POST"])
@@ -31,26 +16,26 @@ def login():
     role     = data.get("role")
 
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-       "SELECT id, role FROM users WHERE id=%s AND password=%s AND LOWER(role)=LOWER(%s)",
-       (user_id, password, role)
-   )
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
+        # WHY func.lower()? Your raw SQL used LOWER(role)=LOWER(%s) to
+        # match roles regardless of capitalization ("Student" vs "student").
+        # func.lower() is SQLAlchemy's way of calling that same PostgreSQL
+        # LOWER() function from Python — this preserves your exact
+        # case-insensitive matching behavior, unchanged.
+        user = User.query.filter(
+            User.id == user_id,
+            User.password == password,
+            func.lower(User.role) == func.lower(role)
+        ).first()
+
         if user:
-            # NEW — create a signed token containing id + role
             access_token = create_access_token(
-                identity=user[0],
-                additional_claims={"role": user[1]}
+                identity=user.id,
+                additional_claims={"role": user.role}
             )
             return jsonify({
                 "success": True,
-                "token": access_token,          # NEW
-                "user": { "id": user[0], "role": user[1] }
+                "token": access_token,
+                "user": { "id": user.id, "role": user.role }
             })
         else:
             return jsonify({"success": False, "message": "Invalid credentials"}), 401
