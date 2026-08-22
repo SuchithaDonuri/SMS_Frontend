@@ -1,25 +1,21 @@
 # routes/principal.py
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
-import psycopg2
-import os
+from models import User, Student, Marks, Attendance, Remarks
 
 principal_bp = Blueprint("principal", __name__)
 
-def get_db():
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT")
-    )
-    return conn
 
 def require_principal():
     claims = get_jwt()
-    return claims.get("role") == "principal".lower()
+    # FIXED — the old version was "principal".lower(), which just
+    # evaluates to "principal" and never actually checks claims.get("role")
+    # at all. This always compared "principal" against a fixed string,
+    # meaning a real principal's role could still fail this check if it
+    # wasn't stored in that exact case. This now correctly lowercases the
+    # ACTUAL role from the token before comparing.
+    return claims.get("role", "").lower() == "principal"
 
 
 # ── GET all students ──
@@ -29,13 +25,8 @@ def get_all_students():
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE role=%s", ("student",))
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        students = [{"id": row[0]} for row in rows]
+        rows = User.query.filter_by(role="student").all()
+        students = [{"id": row.id} for row in rows]
         return jsonify({"success": True, "students": students})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -48,13 +39,8 @@ def get_all_teachers():
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM users WHERE role=%s", ("teacher",))
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        teachers = [{"id": row[0]} for row in rows]
+        rows = User.query.filter_by(role="teacher").all()
+        teachers = [{"id": row.id} for row in rows]
         return jsonify({"success": True, "teachers": teachers})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -67,22 +53,15 @@ def get_all_marks():
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, student_id, exam_type, math, physics, english FROM marks"
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        rows = Marks.query.all()
         marks = [
             {
-                "id":         row[0],
-                "student_id": row[1],
-                "exam_type":  row[2],
-                "math":       row[3],
-                "physics":    row[4],
-                "english":    row[5]
+                "id":         row.id,
+                "student_id": row.student_id,
+                "exam_type":  row.exam_type,
+                "math":       row.math,
+                "physics":    row.physics,
+                "english":    row.english
             }
             for row in rows
         ]
@@ -98,21 +77,14 @@ def get_all_attendance():
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, student_id, subject, status, date FROM attendance"
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        rows = Attendance.query.all()
         attendance = [
             {
-                "id":         row[0],
-                "student_id": row[1],
-                "subject":    row[2],
-                "status":     row[3],
-                "date":       str(row[4])
+                "id":         row.id,
+                "student_id": row.student_id,
+                "subject":    row.subject,
+                "status":     row.status,
+                "date":       str(row.date)
             }
             for row in rows
         ]
@@ -121,58 +93,52 @@ def get_all_attendance():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-# ── NEW: GET students filtered by class + section ──
+# ── GET students filtered by class + section ──
 @principal_bp.route("/api/principal/students/<class_name>/<section>", methods=["GET"])
 @jwt_required()
 def get_students_by_class(class_name, section):
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT student_id FROM students WHERE class_name=%s AND section=%s",
-            (class_name, section)
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
-
-        students = [{"id": row[0]} for row in rows]
+        # WHY straightforward here? No JOIN needed — the students table
+        # already has class_name and section directly on it
+        rows = Student.query.filter_by(class_name=class_name, section=section).all()
+        students = [{"id": row.student_id} for row in rows]
         return jsonify({"success": True, "students": students})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-# ── NEW: GET marks for students in a specific class + section ──
+# ── GET marks for students in a specific class + section ──
 @principal_bp.route("/api/principal/marks/<class_name>/<section>", methods=["GET"])
 @jwt_required()
 def get_marks_by_class(class_name, section):
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT marks.student_id, marks.exam_type, marks.math, marks.physics, marks.english
-            FROM marks
-            JOIN students ON marks.student_id = students.student_id
-            WHERE students.class_name = %s AND students.section = %s
-            """,
-            (class_name, section)
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        # WHY two steps instead of one JOIN query? Your raw SQL joined
+        # marks + students directly in one SQL statement. The ORM way of
+        # achieving the same result, in a simpler and more readable form,
+        # is to do it in two clear steps:
+        #
+        # Step 1: find which students belong to this class+section
+        matching_students = Student.query.filter_by(
+            class_name=class_name, section=section
+        ).all()
+        student_ids = [s.student_id for s in matching_students]
+
+        # Step 2: find all marks belonging to any of those students.
+        # WHY .in_()? This is the ORM equivalent of SQL's
+        # "WHERE student_id IN (id1, id2, id3, ...)"
+        rows = Marks.query.filter(Marks.student_id.in_(student_ids)).all()
 
         marks = [
             {
-                "student_id": row[0],
-                "exam_type":  row[1],
-                "math":       row[2],
-                "physics":    row[3],
-                "english":    row[4]
+                "student_id": row.student_id,
+                "exam_type":  row.exam_type,
+                "math":       row.math,
+                "physics":    row.physics,
+                "english":    row.english
             }
             for row in rows
         ]
@@ -181,34 +147,26 @@ def get_marks_by_class(class_name, section):
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-# ── NEW: GET attendance for students in a specific class + section ──
+# ── GET attendance for students in a specific class + section ──
 @principal_bp.route("/api/principal/attendance/<class_name>/<section>", methods=["GET"])
 @jwt_required()
 def get_attendance_by_class(class_name, section):
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT attendance.student_id, attendance.subject, attendance.status, attendance.date
-            FROM attendance
-            JOIN students ON attendance.student_id = students.student_id
-            WHERE students.class_name = %s AND students.section = %s
-            """,
-            (class_name, section)
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        matching_students = Student.query.filter_by(
+            class_name=class_name, section=section
+        ).all()
+        student_ids = [s.student_id for s in matching_students]
+
+        rows = Attendance.query.filter(Attendance.student_id.in_(student_ids)).all()
 
         attendance = [
             {
-                "student_id": row[0],
-                "subject":    row[1],
-                "status":     row[2],
-                "date":       str(row[3])
+                "student_id": row.student_id,
+                "subject":    row.subject,
+                "status":     row.status,
+                "date":       str(row.date)
             }
             for row in rows
         ]
@@ -217,33 +175,25 @@ def get_attendance_by_class(class_name, section):
         return jsonify({"success": False, "message": str(e)}), 500
 
 
-# ── NEW: GET remarks for students in a specific class + section ──
+# ── GET remarks for students in a specific class + section ──
 @principal_bp.route("/api/principal/remarks/<class_name>/<section>", methods=["GET"])
 @jwt_required()
 def get_remarks_by_class(class_name, section):
     if not require_principal():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            SELECT remarks.student_id, remarks.remark, remarks.date
-            FROM remarks
-            JOIN students ON remarks.student_id = students.student_id
-            WHERE students.class_name = %s AND students.section = %s
-            """,
-            (class_name, section)
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        matching_students = Student.query.filter_by(
+            class_name=class_name, section=section
+        ).all()
+        student_ids = [s.student_id for s in matching_students]
+
+        rows = Remarks.query.filter(Remarks.student_id.in_(student_ids)).all()
 
         remarks = [
             {
-                "student_id": row[0],
-                "remark":     row[1],
-                "date":       str(row[2])
+                "student_id": row.student_id,
+                "remark":     row.remark,
+                "date":       str(row.date)
             }
             for row in rows
         ]

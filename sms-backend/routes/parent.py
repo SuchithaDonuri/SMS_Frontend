@@ -4,20 +4,9 @@
 
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
-import psycopg2
-import os
+from models import Marks, Attendance, Remarks
 
 parent_bp = Blueprint("parent", __name__)
-
-def get_db():
-    conn = psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port=os.getenv("DB_PORT")
-    )
-    return conn
 
 # WHY a role check instead of an identity check (like student.py)?
 # A parent's own token identity is their OWN id (e.g. "P501"), not the
@@ -39,22 +28,14 @@ def get_child_marks(student_id):
     if not require_parent():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, exam_type, math, physics, english FROM marks WHERE student_id=%s",
-            (student_id,)
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        rows = Marks.query.filter_by(student_id=student_id).all()
         marks = [
             {
-                "id":        row[0],
-                "exam_type": row[1],
-                "math":      row[2],
-                "physics":   row[3],
-                "english":   row[4]
+                "id":        row.id,
+                "exam_type": row.exam_type,
+                "math":      row.math,
+                "physics":   row.physics,
+                "english":   row.english
             }
             for row in rows
         ]
@@ -70,21 +51,13 @@ def get_child_attendance(student_id):
     if not require_parent():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, subject, status, date FROM attendance WHERE student_id=%s",
-            (student_id,)
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        rows = Attendance.query.filter_by(student_id=student_id).all()
         attendance = [
             {
-                "id":      row[0],
-                "subject": row[1],
-                "status":  row[2],
-                "date":    str(row[3])
+                "id":      row.id,
+                "subject": row.subject,
+                "status":  row.status,
+                "date":    str(row.date)
             }
             for row in rows
         ]
@@ -100,20 +73,12 @@ def get_child_remarks(student_id):
     if not require_parent():
         return jsonify({"success": False, "message": "Access denied"}), 403
     try:
-        conn   = get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT id, remark, date FROM remarks WHERE student_id=%s",
-            (student_id,)
-        )
-        rows = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        rows = Remarks.query.filter_by(student_id=student_id).all()
         remarks = [
             {
-                "id":     row[0],
-                "remark": row[1],
-                "date":   str(row[2])
+                "id":     row.id,
+                "remark": row.remark,
+                "date":   str(row.date)
             }
             for row in rows
         ]
