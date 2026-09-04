@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      - POSTGRES_USER=sms_user
+      - POSTGRES_PASSWORD=sms_password
+      - POSTGRES_DB=sms_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backup_clean.sql:/docker-entrypoint-initdb.d/backup.sql
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./sms-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=sms_user
+      - DB_PASSWORD=sms_password
+      - DB_NAME=sms_db
+      - JWT_SECRET_KEY=change-this-later-to-something-random
+    depends_on:
+      - db
+
+  frontend:
+    build: ./sms-react
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
