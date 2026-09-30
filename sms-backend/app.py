@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from flask_jwt_extended import JWTManager
 import os
 from extensions import db
+from werkzeug.security import generate_password_hash
 
 load_dotenv()
 
@@ -30,6 +31,24 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 
 db.init_app(app)
+def migrate_passwords():
+    from models import User
+
+    with app.app_context():
+        users = User.query.all()
+
+        for user in users:
+            # Skip passwords that are already hashed.
+            if user.password.startswith(("scrypt:", "pbkdf2:", "argon2:")):
+                continue
+
+            print(f"Hashing password for user: {user.id}")
+
+            user.password = generate_password_hash(user.password)
+
+        db.session.commit()
+
+        print("Password migration completed successfully.")
 
 
 # WHY import after app creation?

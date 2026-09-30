@@ -2,7 +2,8 @@
 
 # WHY student_bp? All student routes grouped in one blueprint
 from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from decorators import role_required
+from flask_jwt_extended import get_jwt_identity
 from models import Marks, Attendance, Remarks, Timetable
 
 student_bp = Blueprint("student", __name__)
@@ -10,13 +11,15 @@ student_bp = Blueprint("student", __name__)
 # ── GET Marks ──
 # React calls: GET /api/student/marks/S1001
 @student_bp.route("/api/student/marks/<student_id>", methods=["GET"])
-@jwt_required()
+@role_required("student")
 def get_marks(student_id):
-
     current_user_id = get_jwt_identity()
     if current_user_id != student_id:
-        return jsonify({"success": False, "message": "Access denied"}), 403
-
+        return jsonify({
+        "success": False,
+        "message": "Access denied"
+    }),403
+    
     try:
         # WHY .filter_by(...).all()? This is the ORM equivalent of:
         # SELECT * FROM marks WHERE student_id=%s

@@ -13,7 +13,7 @@ class User(db.Model):
     __tablename__ = "users"
 
     id       = db.Column(db.String(20), primary_key=True)
-    password = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     role     = db.Column(db.String(20), nullable=False)
 
 
