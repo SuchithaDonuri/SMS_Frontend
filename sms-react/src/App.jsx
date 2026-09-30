@@ -11,6 +11,7 @@ import StudentAttendance from './pages/student/Attendance'
 import StudentTimetable  from './pages/student/Timetable'
 import StudentRemarks from './pages/student/Remarks'
 import PrincipalDashboard from './pages/principal/PrincipalDashboard'
+import PrincipalStudentDetails from './pages/principal/PrincipalStudentDetails'
 import ParentDashboard from './pages/parent/ParentDashboard'
 import ClassView from './pages/principal/ClassView'
 
@@ -115,7 +116,14 @@ function App() {
         <ProtectedRoute allowedRole="Principal">
           <ClassView />
         </ProtectedRoute>
+        
+        
       }/>
+      <Route path="/principal/student/:studentId" element={
+        <ProtectedRoute allowedRole="Principal">
+          <PrincipalStudentDetails />
+        </ProtectedRoute>}
+      />
 
         </Routes>
       </BrowserRouter>

@@ -74,3 +74,29 @@ class Timetable(db.Model):
     __table_args__ = (
         db.UniqueConstraint("class_name", "day", name="uq_class_day"),
     )
+    
+
+class ParentChild(db.Model):
+    __tablename__ = "parent_child"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    parent_id = db.Column(
+        db.String(20),
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+
+    student_id = db.Column(
+        db.String(20),
+        db.ForeignKey("students.student_id"),
+        nullable=False
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "parent_id",
+            "student_id",
+            name="uq_parent_student"
+        ),
+    )

@@ -3,11 +3,39 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import Navbar from "../../components/Navbar";
+import { useEffect, useState } from "react";
 import ClassView from "./ClassView";
+import { getPrincipalDashboardSummary } from "../../api/flaskApi";
 
 function PrincipalDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+  async function loadDashboard() {
+    try {
+      setLoading(true);
+
+      const response = await getPrincipalDashboardSummary();
+
+      if (response.success) {
+        setSummary(response.summary);
+      } else {
+        setError(response.message || "Failed to load dashboard");
+      }
+    } catch (err) {
+      console.error("Dashboard error:", err);
+      setError("Unable to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadDashboard();
+}, []);
 
   // WHY 5 cards? Your HTML had exactly 5 cards — we match that exactly
   // WHY reuse existing routes? Principal views the same data
@@ -32,6 +60,45 @@ function PrincipalDashboard() {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+
+      {/* Dashboard Summary */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <p className="text-sm text-slate-500">Students</p>
+            <p className="text-3xl font-bold text-slate-800 mt-2">
+              {loading ? "—" : summary?.students ?? 0}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <p className="text-sm text-slate-500">Teachers</p>
+            <p className="text-3xl font-bold text-slate-800 mt-2">
+              {loading ? "—" : summary?.teachers ?? 0}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <p className="text-sm text-slate-500">Classes</p>
+            <p className="text-3xl font-bold text-slate-800 mt-2">
+              {loading ? "—" : summary?.classes ?? 0}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <p className="text-sm text-slate-500">Marks Records</p>
+            <p className="text-3xl font-bold text-slate-800 mt-2">
+              {loading ? "—" : summary?.marks_records ?? 0}
+            </p>
+          </div>
+
+        </section>
+
+        {error && (
+          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
         {/* Welcome section — same style as Student and Teacher dashboards */}
         <section className="bg-white/70 backdrop-blur-md rounded-2xl shadow-lg p-8 border border-white mb-8">

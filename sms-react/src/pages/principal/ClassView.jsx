@@ -1,185 +1,333 @@
-// src/pages/principal/ClassView.jsx
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar";
-import {
-  getStudentsByClass,
-  getMarksByClass,
-  getAttendanceByClass,
-  getRemarksByClass,
-} from "../../api/flaskApi";
+import { getStudentsByClass } from "../../api/flaskApi";
 
 function ClassView() {
-  // WHY hardcode these options? You currently only have Class 6, Sections A/B
-  // in the database. Once more classes exist, this becomes a dropdown fed by
-  // a real "list of classes" API instead of a fixed array.
+
+  const navigate = useNavigate();
+
   const classOptions = ["6"];
   const sectionOptions = ["A", "B"];
 
   const [className, setClassName] = useState("");
   const [section, setSection] = useState("");
-  const [loading, setLoading] = useState(false);
+
   const [students, setStudents] = useState([]);
-  const [marks, setMarks] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [remarks, setRemarks] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState("");
+
 
   async function handleView() {
-    if (!className || !section) return;
+
+    if (!className || !section) {
+      return;
+    }
+
     setLoading(true);
     setSearched(true);
+    setError("");
+
     try {
-      const [studentsRes, marksRes, attendanceRes, remarksRes] = await Promise.all([
-        getStudentsByClass(className, section),
-        getMarksByClass(className, section),
-        getAttendanceByClass(className, section),
-        getRemarksByClass(className, section),
-      ]);
-      setStudents(studentsRes.success ? studentsRes.students : []);
-      setMarks(marksRes.success ? marksRes.marks : []);
-      setAttendance(attendanceRes.success ? attendanceRes.attendance : []);
-      setRemarks(remarksRes.success ? remarksRes.remarks : []);
-    } catch (err) {
-      console.error("Failed to load class data", err);
+
+      const response = await getStudentsByClass(
+        className,
+        section
+      );
+
+      if (response.success) {
+
+        setStudents(response.students);
+
+      } else {
+
+        setStudents([]);
+        setError(
+          response.message || "Failed to load students."
+        );
+      }
+
+    } catch (error) {
+
+      console.error(error);
+
+      setStudents([]);
+
+      setError(
+        "Cannot connect to server."
+      );
+
     } finally {
+
       setLoading(false);
     }
   }
 
+
+  function handleStudentClick(studentId) {
+
+    navigate(
+      `/principal/student/${studentId}`
+    );
+  }
+
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200">
+    <div className="min-h-screen bg-slate-50">
+
       <Navbar />
+
       <main className="max-w-6xl mx-auto px-6 py-8">
 
-        <h2 className="text-2xl font-bold text-slate-800 mb-6">
-          View by Class & Section
-        </h2>
+        <div className="mb-8">
 
-        {/* ── Class + Section selectors ── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8 flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Class</label>
-            <select
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-              className="px-4 py-2 border border-slate-200 rounded-lg text-sm"
-            >
-              <option value="">Select class</option>
-              {classOptions.map((c) => (
-                <option key={c} value={c}>Class {c}</option>
-              ))}
-            </select>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Class & Section
+          </h1>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Section</label>
-            <select
-              value={section}
-              onChange={(e) => setSection(e.target.value)}
-              className="px-4 py-2 border border-slate-200 rounded-lg text-sm"
-            >
-              <option value="">Select section</option>
-              {sectionOptions.map((s) => (
-                <option key={s} value={s}>Section {s}</option>
-              ))}
-            </select>
-          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            Select a class and section to view students.
+          </p>
 
-          <button
-            onClick={handleView}
-            disabled={!className || !section || loading}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
-          >
-            {loading ? "Loading..." : "View"}
-          </button>
         </div>
 
-        {searched && !loading && (
-          <div className="space-y-8">
 
-            {/* Students */}
-            <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="font-semibold text-slate-800 mb-3">Students ({students.length})</h3>
-              {students.length === 0 ? (
-                <p className="text-sm text-slate-500">No students found in this class/section.</p>
-              ) : (
-                <ul className="text-sm text-slate-600 flex flex-wrap gap-2">
-                  {students.map((s) => (
-                    <li key={s.id} className="bg-slate-100 px-3 py-1 rounded-full">{s.id}</li>
-                  ))}
-                </ul>
-              )}
-            </section>
+        {/* FILTERS */}
 
-            {/* Marks */}
-            <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="font-semibold text-slate-800 mb-3">Marks</h3>
-              {marks.length === 0 ? (
-                <p className="text-sm text-slate-500">No marks recorded yet.</p>
-              ) : (
-                <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr className="text-slate-500 border-b">
-                      <th className="py-2">Student</th><th>Exam</th><th>Math</th><th>Physics</th><th>English</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {marks.map((m, i) => (
-                      <tr key={i} className="border-b last:border-0">
-                        <td className="py-2">{m.student_id}</td>
-                        <td>{m.exam_type}</td><td>{m.math}</td><td>{m.physics}</td><td>{m.english}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </section>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
 
-            {/* Attendance */}
-            <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="font-semibold text-slate-800 mb-3">Attendance</h3>
-              {attendance.length === 0 ? (
-                <p className="text-sm text-slate-500">No attendance recorded yet.</p>
-              ) : (
-                <table className="w-full text-sm text-left">
-                  <thead>
-                    <tr className="text-slate-500 border-b">
-                      <th className="py-2">Student</th><th>Subject</th><th>Status</th><th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attendance.map((a, i) => (
-                      <tr key={i} className="border-b last:border-0">
-                        <td className="py-2">{a.student_id}</td>
-                        <td>{a.subject}</td><td>{a.status}</td><td>{a.date}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </section>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
 
-            {/* Remarks */}
-            <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="font-semibold text-slate-800 mb-3">Remarks</h3>
-              {remarks.length === 0 ? (
-                <p className="text-sm text-slate-500">No remarks recorded yet.</p>
-              ) : (
-                <ul className="text-sm text-slate-600 space-y-2">
-                  {remarks.map((r, i) => (
-                    <li key={i} className="border-b pb-2 last:border-0">
-                      <span className="font-medium">{r.student_id}:</span> {r.remark}
-                      <span className="text-slate-400 ml-2">({r.date})</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            <div>
+
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Class
+              </label>
+
+              <select
+                value={className}
+                onChange={(e) =>
+                  setClassName(e.target.value)
+                }
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+
+                <option value="">
+                  Select class
+                </option>
+
+                {classOptions.map((item) => (
+
+                  <option
+                    key={item}
+                    value={item}
+                  >
+                    Class {item}
+                  </option>
+
+                ))}
+
+              </select>
+
+            </div>
+
+
+            <div>
+
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Section
+              </label>
+
+              <select
+                value={section}
+                onChange={(e) =>
+                  setSection(e.target.value)
+                }
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+
+                <option value="">
+                  Select section
+                </option>
+
+                {sectionOptions.map((item) => (
+
+                  <option
+                    key={item}
+                    value={item}
+                  >
+                    Section {item}
+                  </option>
+
+                ))}
+
+              </select>
+
+            </div>
+
+
+            <button
+              onClick={handleView}
+              disabled={
+                !className ||
+                !section ||
+                loading
+              }
+              className="w-full px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+
+              {loading
+                ? "Loading..."
+                : "View Students"}
+
+            </button>
 
           </div>
+
+        </div>
+
+
+        {/* ERROR */}
+
+        {error && (
+
+          <div className="mt-6 bg-red-50 border border-red-200 rounded-xl p-4">
+
+            <p className="text-sm text-red-600">
+              {error}
+            </p>
+
+          </div>
+
         )}
+
+
+        {/* RESULTS */}
+
+        {searched && !loading && (
+
+          <section className="mt-8">
+
+            <div className="flex items-center justify-between mb-4">
+
+              <div>
+
+                <h2 className="text-lg font-semibold text-slate-800">
+
+                  Class {className} — Section {section}
+
+                </h2>
+
+                <p className="text-sm text-slate-500 mt-1">
+
+                  {students.length} student
+                  {students.length !== 1
+                    ? "s"
+                    : ""}
+
+                </p>
+
+              </div>
+
+            </div>
+
+
+            {students.length === 0 ? (
+
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+
+                <p className="text-sm text-slate-500">
+                  No students found in this class and section.
+                </p>
+
+              </div>
+
+            ) : (
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+                <table className="w-full text-sm">
+
+                  <thead className="bg-slate-50 border-b border-slate-200">
+
+                    <tr className="text-left text-slate-500">
+
+                      <th className="px-6 py-4 font-medium">
+                        Student ID
+                      </th>
+
+                      <th className="px-6 py-4 font-medium">
+                        Class
+                      </th>
+
+                      <th className="px-6 py-4 font-medium">
+                        Section
+                      </th>
+
+                      <th className="px-6 py-4 font-medium text-right">
+                        Action
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+
+                  <tbody>
+
+                    {students.map((student) => (
+
+                      <tr
+                        key={student.id}
+                        className="border-b last:border-b-0 border-slate-100 hover:bg-slate-50 transition"
+                      >
+
+                        <td className="px-6 py-4 font-medium text-slate-800">
+                          {student.id}
+                        </td>
+
+                        <td className="px-6 py-4 text-slate-600">
+                          Class {className}
+                        </td>
+
+                        <td className="px-6 py-4 text-slate-600">
+                          Section {section}
+                        </td>
+
+                        <td className="px-6 py-4 text-right">
+
+                          <button
+                            onClick={() =>
+                              handleStudentClick(
+                                student.id
+                              )
+                            }
+                            className="px-4 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium transition cursor-pointer"
+                          >
+                            View Student
+                          </button>
+
+                        </td>
+
+                      </tr>
+
+                    ))}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            )}
+
+          </section>
+
+        )}
+
       </main>
+
     </div>
   );
 }
